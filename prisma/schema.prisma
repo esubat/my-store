@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider             = "prisma-client"
+  output               = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  isActive    Boolean  @default(true)
+
+  users       User[]
+  products    Product[]
+  movements   StockMovement[]
+  stockBatches StockBatch[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model User {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String   @unique
+  password  String
+  isActive  Boolean  @default(true)
+
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id])
+
+  movements StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name])
+}
+
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+
+  roles       RolePermission[]
+}
+
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  sku         String
+  description String?
+  salePrice   Decimal
+  isActive    Boolean  @default(true)
+
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+
+  movements   StockMovement[]
+  batches     StockBatch[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, sku])
+}
+
+
+model StockBatch {
+  id           String   @id @default(cuid())
+  storeId      String
+  productId    String
+
+  unitCost     Decimal
+  initialQty   Int
+  remainingQty Int
+
+  store        Store   @relation(fields: [storeId], references: [id])
+  product      Product @relation(fields: [productId], references: [id])
+
+  usages       BatchUsage[]
+
+  createdAt    DateTime @default(now())
+
+  @@index([storeId, productId])
+}
+
+
+
+model BatchUsage {
+  id              String   @id @default(cuid())
+  stockBatchId    String
+  stockMovementId String
+  quantity        Int
+
+  batch    StockBatch    @relation(fields: [stockBatchId], references: [id], onDelete: Cascade)
+  movement StockMovement @relation(fields: [stockMovementId], references: [id], onDelete: Cascade)
+}
+
+
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  type      StockMovementType
+  quantity  Int
+  note      String?
+
+  storeId   String
+  productId String
+  userId    String
+
+  store     Store   @relation(fields: [storeId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+
+  batchUsages BatchUsage[]
+
+  createdAt DateTime @default(now())
+}
+
+
+enum StockMovementType {
+  PURCHASE
+  SALE
+  RETURN
+  TRANSFER
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  DAMAGE
+}
