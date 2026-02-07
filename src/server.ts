@@ -2,12 +2,9 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from "../swagger.config"
-import dotenv from 'dotenv';
+import envConfig from './config/env.config';
 import api from "./api"
 
-dotenv.config();
-
-const PORT = process.env.PORT || 5000;
 
 const app = express();
 app.use(cors());
@@ -26,6 +23,6 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 
-app.listen(PORT, () => {
-    console.log(`server is running at port ${PORT}`)
+app.listen(envConfig.port, () => {
+    console.log(`server is running at port ${envConfig.port}`)
 })
