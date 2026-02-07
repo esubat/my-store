@@ -1,4 +1,6 @@
 import { prisma } from "../../prisma/client";
+import bcrypt from "bcrypt";
+
 
 interface StoreData {
   name: string;
@@ -26,6 +28,9 @@ export const createStoreWithAdmin = async (storeData: StoreData, adminData: Admi
     throw new Error('Role "ADMIN" not found');
   }
 
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
   const store = await prisma.store.create({
     data: {
       name,
@@ -35,7 +40,7 @@ export const createStoreWithAdmin = async (storeData: StoreData, adminData: Admi
             firstName,
             lastName,
             phone,
-            password,
+            password: hashedPassword,
             roleId: role.id,
           },
         ],
